@@ -42,6 +42,8 @@ It can scan either a **local project directory** or a **remote URL** (HTML + lin
 
 ### 1. Install
 ```bash
+git clone https://github.com/zenzue/jssecpro
+cd jssecpro
 pip install -e .
 ````
 
