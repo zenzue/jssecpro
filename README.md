@@ -3,7 +3,7 @@
 **Author:** w01f  
 **Version:** 1.1.0  
 
-**There has fasle postivie alot. will fix it asap**
+**There has fasle positive alot. will fix it asap**
 
 `jssecpro` is a plugin-based framework for **static security analysis** of JavaScript code.  
 It can scan either a **local project directory** or a **remote URL** (HTML + linked JS) and generate actionable security findings.  
