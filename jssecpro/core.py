@@ -1,20 +1,20 @@
-
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
 import os, requests
 from bs4 import BeautifulSoup
+import urllib.parse
 
 @dataclass
 class TargetFile:
-    source: str            # path or URL
+    source: str
     content: str
-    kind: str              # 'js'|'html'
+    kind: str
     meta: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class Finding:
     plugin: str
-    severity: str          # INFO|LOW|MEDIUM|HIGH|CRITICAL
+    severity: str
     message: str
     location: str
     line: Optional[int] = None
@@ -63,20 +63,49 @@ class Collector:
             html = r.text or ""
         except Exception:
             return items
-        if html:
-            items.append(TargetFile(source=url, content=html, kind="html"))
-            soup = BeautifulSoup(html, "html.parser")
-            for s in soup.find_all("script"):
-                src = s.get("src")
-                if not src:
-                    items.append(TargetFile(source=f"{url}#inline", content=s.text or "", kind="js"))
-                    continue
-                import urllib.parse
-                full = urllib.parse.urljoin(url, src)
-                try:
-                    rs = self.session.get(full, timeout=self.timeout)
-                    items.append(TargetFile(source=full, content=rs.text or "", kind="js",
-                                            meta={"integrity": s.get("integrity"), "crossorigin": s.get("crossorigin")}))
-                except Exception:
-                    pass
+        if not html:
+            return items
+        items.append(TargetFile(source=url, content=html, kind="html"))
+        soup = BeautifulSoup(html, "html.parser")
+        for s in soup.find_all("script"):
+            src = s.get("src")
+            if not src:
+                items.append(TargetFile(source=f"{url}#inline", content=s.text or "", kind="js"))
+                continue
+            full = urllib.parse.urljoin(url, src)
+            try:
+                rs = self.session.get(full, timeout=self.timeout)
+                items.append(TargetFile(source=full, content=rs.text or "", kind="js",
+                                        meta={"integrity": s.get("integrity"), "crossorigin": s.get("crossorigin"), "type": s.get("type")}))
+            except Exception:
+                pass
+        for link in soup.find_all("link", attrs={"rel": lambda v: v and "modulepreload" in v}):
+            href = link.get("href")
+            if not href: continue
+            full = urllib.parse.urljoin(url, href)
+            try:
+                rs = self.session.get(full, timeout=self.timeout)
+                items.append(TargetFile(source=full, content=rs.text or "", kind="js", meta={"rel":"modulepreload"}))
+            except Exception:
+                pass
+        for link in soup.find_all("link", attrs={"rel": lambda v: v and "preload" in v}):
+            if (link.get("as") or "").lower() != "script":
+                continue
+            href = link.get("href")
+            if not href: continue
+            full = urllib.parse.urljoin(url, href)
+            try:
+                rs = self.session.get(full, timeout=self.timeout)
+                items.append(TargetFile(source=full, content=rs.text or "", kind="js", meta={"rel":"preload","as":"script"}))
+            except Exception:
+                pass
+        for link in soup.find_all("link", attrs={"rel": lambda v: v and "stylesheet" in v}):
+            href = link.get("href")
+            if not href: continue
+            full = urllib.parse.urljoin(url, href)
+            try:
+                rs = self.session.get(full, timeout=self.timeout)
+                items.append(TargetFile(source=full, content=rs.text or "", kind="html", meta={"rel":"stylesheet"}))
+            except Exception:
+                pass
         return items
