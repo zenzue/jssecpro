@@ -1,8 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name="jssecpro"
-version="1.1.0"
-description="Advanced JavaScript Security Analysis Framework (plugin-based)"
-requires-python=">=3.12.9"
-dependencies=["requests","beautifulsoup4","rich","pyyaml","jinja2"]
+name = "jssecpro"
+version = "1.2.0"
+description = "Advanced JavaScript Security Analysis Framework"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "w01f" }]
+dependencies = [
+  "requests",
+  "beautifulsoup4",
+  "rich",
+  "pyyaml",
+  "jinja2"
+]
+
 [project.scripts]
-jssecpro="jssecpro.cli:main"
+jssecpro = "jssecpro.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["jssecpro*"]
+exclude = ["reports*", "tests*", "examples*", "scripts*", "docs*"]
+
+[tool.setuptools]
+include-package-data = true
