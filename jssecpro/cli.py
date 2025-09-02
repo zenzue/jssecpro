@@ -1,4 +1,3 @@
-
 import argparse, os, sys
 from rich.console import Console
 from .core import Collector
@@ -39,6 +38,7 @@ def main():
     scan.add_argument("--plugins", help="Comma-list of plugins", default=",".join(PLUGINS.keys()))
     scan.add_argument("--out", default="./reports", help="Output directory")
     scan.add_argument("--html", action="store_true", help="Also write HTML report")
+    scan.add_argument("--debug", action="store_true", help="Print collected assets and basic meta")
 
     args = p.parse_args()
     if args.cmd != "scan":
@@ -53,7 +53,11 @@ def main():
 
     col = Collector(path=args.path, url=args.url)
     files = col.collect()
-    c.print(f"Collected [cyan]{len(files)}[/cyan] assets")
+    c.print(f"Collected [cyan]{len(files)}[/cyan] assets; CSPs captured: {len(col.csp_headers)}")
+    if args.debug:
+        for t in files:
+            meta = ", ".join(f"{k}={v}" for k,v in (t.meta or {}).items() if v)
+            c.print(f" - {t.kind.upper()}: {t.source}" + (f"  [{meta}]" if meta else ""))
 
     plug_objs = [PLUGINS[k] for k in selected]
     c.print("Running plugins: " + ", ".join([p.name for p in plug_objs]))
